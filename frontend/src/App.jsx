@@ -5,14 +5,15 @@ import axios from 'axios'
 const LANGUAGES = ['python', 'javascript', 'cpp']
 
 const DEFAULT_CODE = {
-  python: 'print("Hello, World!")',
-  javascript: 'console.log("Hello, World!")',
-  cpp: '#include<iostream>\nusing namespace std;\nint main(){\n  cout<<"Hello, World!"<<endl;\n  return 0;\n}'
+  python: 'name = input("Enter your name: ")\nprint(f"Hello, {name}!")',
+  javascript: 'const lines = require("fs").readFileSync("/dev/stdin","utf8").trim().split("\\n");\nconsole.log("Hello, " + lines[0] + "!");',
+  cpp: '#include<iostream>\nusing namespace std;\nint main(){\n  string name;\n  cin >> name;\n  cout << "Hello, " << name << "!" << endl;\n  return 0;\n}'
 }
 
 export default function App() {
   const [language, setLanguage] = useState('python')
   const [code, setCode] = useState(DEFAULT_CODE['python'])
+  const [stdin, setStdin] = useState('')
   const [output, setOutput] = useState('')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
@@ -23,6 +24,7 @@ export default function App() {
     setCode(DEFAULT_CODE[lang])
     setOutput('')
     setStatus('')
+    setStdin('')
   }
 
   const handleSubmit = async () => {
@@ -32,7 +34,7 @@ export default function App() {
     setExecutionTime(null)
 
     try {
-      const { data } = await axios.post('/api/submissions', { language, code })
+      const { data } = await axios.post('/api/submissions', { language, code, stdin })
       const id = data.id
 
       const poll = setInterval(async () => {
@@ -49,8 +51,13 @@ export default function App() {
       }, 1000)
 
     } catch (err) {
-      setStatus('error')
-      setOutput('Failed to connect to server')
+      if (err.response?.status === 429) {
+        setStatus('error')
+        setOutput('Too many submissions. Please wait a minute.')
+      } else {
+        setStatus('error')
+        setOutput('Failed to connect to server')
+      }
       setLoading(false)
     }
   }
@@ -100,6 +107,19 @@ export default function App() {
                 scrollBeyondLastLine: false,
                 padding: { top: 16 }
               }}
+            />
+          </div>
+
+          {/* Stdin Input */}
+          <div className="border-t border-gray-800">
+            <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-800">
+              stdin / input
+            </div>
+            <textarea
+              value={stdin}
+              onChange={(e) => setStdin(e.target.value)}
+              placeholder="Enter program input here..."
+              className="w-full bg-gray-900 text-gray-300 text-sm font-mono px-4 py-3 resize-none outline-none h-24"
             />
           </div>
 

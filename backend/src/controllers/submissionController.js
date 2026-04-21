@@ -3,7 +3,7 @@ const { pool } = require('../db');
 const { addJob } = require('../workers/queue');
 
 const submitCode = async (req, res) => {
-  const { language, code } = req.body;
+  const { language, code, stdin = '' } = req.body;
 
   if (!language || !code) {
     return res.status(400).json({ error: 'language and code are required' });
@@ -16,7 +16,7 @@ const submitCode = async (req, res) => {
     [id, language, code, 'pending']
   );
 
-  await addJob({ id, language, code });
+  await addJob({ id, language, code, stdin });
 
   res.status(201).json({ id, status: 'pending' });
 };

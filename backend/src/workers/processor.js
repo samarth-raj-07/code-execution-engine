@@ -8,11 +8,11 @@ const connection = {
 };
 
 const worker = new Worker('submissions', async (job) => {
-  const { id, language, code } = job.data;
+  const { id, language, code, stdin = '' } = job.data;
 
   await pool.query('UPDATE submissions SET status = $1 WHERE id = $2', ['running', id]);
 
-  const result = await runCode(language, code);
+  const result = await runCode(language, code, stdin);
 
   await pool.query(
     'UPDATE submissions SET status = $1, output = $2, error = $3, execution_time = $4 WHERE id = $5',
