@@ -32,4 +32,11 @@ const getSubmission = async (req, res) => {
   res.json(result.rows[0]);
 };
 
-module.exports = { submitCode, getSubmission };
+const getHistory = async (req, res) => {
+  const result = await pool.query(
+    'SELECT id, language, status, execution_time, created_at FROM submissions ORDER BY created_at DESC LIMIT 20'
+  );
+  res.json(result.rows);
+};
+
+module.exports = { submitCode, getSubmission, getHistory };

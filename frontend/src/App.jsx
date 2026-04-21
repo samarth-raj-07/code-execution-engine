@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 import axios from 'axios'
 
@@ -10,7 +10,78 @@ const DEFAULT_CODE = {
   cpp: '#include<iostream>\nusing namespace std;\nint main(){\n  string name;\n  cin >> name;\n  cout << "Hello, " << name << "!" << endl;\n  return 0;\n}'
 }
 
+function HistoryPage({ onBack }) {
+  const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    axios.get('/api/submissions/history').then(res => {
+      setHistory(res.data)
+      setLoading(false)
+    })
+  }, [])
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-purple-400">⚡ Code Execution Engine</h1>
+        <button
+          onClick={onBack}
+          className="text-sm text-gray-400 hover:text-white transition-all"
+        >
+          ← Back to Editor
+        </button>
+      </div>
+
+      <div className="p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-200">Submission History</h2>
+
+        {loading && <div className="text-yellow-400 animate-pulse">Loading...</div>}
+
+        {!loading && history.length === 0 && (
+          <div className="text-gray-600">No submissions yet.</div>
+        )}
+
+        {!loading && history.length > 0 && (
+          <div className="flex flex-col gap-3">
+            {history.map(sub => (
+              <div
+                key={sub.id}
+                className="bg-gray-900 border border-gray-800 rounded-lg px-5 py-4 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-mono bg-gray-800 px-2 py-1 rounded text-purple-400">
+                    {sub.language}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(sub.created_at).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  {sub.execution_time && (
+                    <span className="text-xs text-gray-500">
+                      ⚡ {sub.execution_time}ms
+                    </span>
+                  )}
+                  <span className={`text-xs px-2 py-1 rounded font-medium ${
+                    sub.status === 'success' ? 'bg-green-900 text-green-400' :
+                    sub.status === 'error' ? 'bg-red-900 text-red-400' :
+                    'bg-yellow-900 text-yellow-400'
+                  }`}>
+                    {sub.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
+  const [page, setPage] = useState('editor')
   const [language, setLanguage] = useState('python')
   const [code, setCode] = useState(DEFAULT_CODE['python'])
   const [stdin, setStdin] = useState('')
@@ -62,13 +133,22 @@ export default function App() {
     }
   }
 
+  if (page === 'history') {
+    return <HistoryPage onBack={() => setPage('editor')} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
 
       {/* Header */}
       <div className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-purple-400">⚡ Code Execution Engine</h1>
-        <span className="text-sm text-gray-500">Isolated Docker Sandbox</span>
+        <button
+          onClick={() => setPage('history')}
+          className="text-sm text-gray-400 hover:text-white transition-all"
+        >
+          📋 History
+        </button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
